@@ -14,6 +14,10 @@ from main.models import Experience, Project, Education
 
 import datetime
 
+#helper is_editor
+def is_editor(user):
+    return user.groups.filter(name="Editor").exists()
+
 def show_main(request):
     last_login = request.COOKIES.get('last_login', 'Belum ada sesi login / Cookie tidak ditemukan')
     context = {
@@ -50,6 +54,7 @@ def show_projects(request):
         "name": "Kevin",
         "project_list": projects,
         "title_query": title_query,
+        "is_editor": is_editor(request.user) if request.user.is_authenticated else False,
     }
     return render(request, "projects.html", context)
 
@@ -118,6 +123,7 @@ def show_education(request):
         "name": "Kevin Ryan Ezekiel",
         "education_list": education_list,
         "institution_query": institution_query,
+        "is_editor": is_editor(request.user) if request.user.is_authenticated else False,
     }
     return render(request, "education.html", context)
 
