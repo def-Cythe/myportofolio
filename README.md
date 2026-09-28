@@ -125,6 +125,7 @@ Kelas : PBP C
     -Debugging bug ketika isi berkas education.html dan education_form.html tertukar (membandingkan kode di kedua berkas sekaligus melihat apa yang terjadi pada preview local dengan runserver)
 
 ---
+
 # 28/9/2026 - Tugas 4
 ## A. Weekly Instruction Step :
 1. Clone this repository
@@ -135,9 +136,15 @@ Kelas : PBP C
     env\Scripts\activate
 3. Install Dependencies 
     pip install -r requirements.txt
-4. Run server
+4. Apply database migrations
+    python manage.py migrate
+5. Create a superuser (portfolio owner)
+    python manage.py createsuperuser
+6. Run server
     python manage.py runserver
-5. Open `http://localhost:8000` in any browser
+7. Open `http://localhost:8000/admin/`, make group called `Editor`, then move editor's account into it
+8. Open `http://localhost:8000` in any browser
+
 
 ## B. Weekly Updates :
 1. Menambahkan role Editor lewat Django `Group` dan menerapkan pembatasan hak akses server untuk 4 role (pengunjung, pengguna biasa, editor, pemilik) pada view Projects dan Education
