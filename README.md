@@ -123,3 +123,27 @@ Kelas : PBP C
     -Diskusi mengenai konsep template inheritance, seperti perbedaan struktur file sebelum/sesudah menggunakan `{% extends %}`, dan bagian-bagian /templates/ yang harus dipindahkan ke base.html
     -Diskusi fungsi Create & Update seperti pemahaman parameter `instance=` pada `ModelForm`
     -Debugging bug ketika isi berkas education.html dan education_form.html tertukar (membandingkan kode di kedua berkas sekaligus melihat apa yang terjadi pada preview local dengan runserver)
+
+---
+# 28/9/2026 - Tugas 4
+## A. Weekly Instruction Step :
+1. Clone this repository
+    git clone https://github.com/ke-Vyn/myportofolio.git
+    cd myportofolio
+2. Create a virtual environment and activate it
+    python -m venv env
+    env\Scripts\activate
+3. Install Dependencies 
+    pip install -r requirements.txt
+4. Run server
+    python manage.py runserver
+5. Open `http://localhost:8000` in any browser
+
+## B. Weekly Updates :
+1. Menambahkan role Editor lewat Django `Group` dan menerapkan pembatasan hak akses server untuk 4 role (pengunjung, pengguna biasa, editor, pemilik) pada view Projects dan Education
+2. Menambahkan view `update_project` dan penyesuaian tombol Tambah/Edit/Hapus pada template sesuai role pengguna
+3. Menambahkan button toggle star Projects, serta jumlah star dan status pengguna; membatasi field pada endpoint `/api/projects/` agar `starred_by` tidak terekspos
+
+## D. AI Closure : 
+- Tool used: Gemini AI
+- How it was used: diskusi konsep otorisasi berbasis role (`@login_required` sebelum pengecekan role / Principle of Least Privilege), serta debugging beberapa kesalahan kecil
