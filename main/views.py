@@ -162,7 +162,7 @@ def show_education(request):
         request,
         "education.html",
         {
-            "name": "Kevin Ryan Ezekiel",
+            "name": "Kevin",
             "can_add_education": request.user.is_superuser,
             "can_edit_education": can_edit_education(request.user),
             "institution_query": request.GET.get("institution", "").strip(),

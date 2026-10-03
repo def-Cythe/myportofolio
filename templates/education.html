@@ -93,6 +93,10 @@
         "#education-csrf-source [name=csrfmiddlewaretoken]"
     ).value;
 
+    const SEARCH_DEBOUNCE_DELAY = 300;
+    let educationSearchTimer;
+    let educationRequestController;
+
     function showEducationState(state) {
         loadingState.classList.toggle("hide", state !== "loading");
         errorState.classList.toggle("hide", state !== "error");
@@ -135,8 +139,6 @@
                 String(item.is_starred)
             );
         }
-
-        starInfo.textContent = `★ ${item.star_count} · Login untuk memberi star`;
     }
 
     async function toggleEducationStar(item, starInfo, starButton) {
@@ -276,6 +278,13 @@
     }
 
     async function loadEducation(searchQuery = "") {
+        if (educationRequestController) {
+            educationRequestController.abort();
+        }
+
+        const requestController = new AbortController();
+        educationRequestController = requestController;
+
         showEducationState("loading");
 
         const url = new URL(EDUCATION_ENDPOINT, window.location.origin);
@@ -288,6 +297,7 @@
                 headers: {
                     "Accept": "application/json",
                 },
+                signal: requestController.signal,
             });
 
             if (!response.ok) {
@@ -295,6 +305,11 @@
             }
 
             const educationData = await response.json();
+
+            if (requestController !== educationRequestController) {
+                return;
+            }
+
             if (!Array.isArray(educationData)) {
                 throw new Error("Format data Education tidak valid.");
             }
@@ -316,6 +331,13 @@
             educationList.replaceChildren(cards);
             showEducationState("list");
         } catch (error) {
+            if (
+                requestController !== educationRequestController
+                || error.name === "AbortError"
+            ) {
+                return;
+            }
+
             console.error("Gagal memuat Education:", error);
             errorMessage.textContent =
                 "Gagal memuat riwayat pendidikan. Periksa koneksi lalu coba lagi.";
@@ -323,8 +345,17 @@
         }
     }
 
+    searchInput.addEventListener("input", () => {
+        clearTimeout(educationSearchTimer);
+
+        educationSearchTimer = setTimeout(() => {
+            loadEducation(searchInput.value.trim());
+        }, SEARCH_DEBOUNCE_DELAY);
+    });
+
     searchForm.addEventListener("submit", (event) => {
         event.preventDefault();
+        clearTimeout(educationSearchTimer);
         loadEducation(searchInput.value.trim());
     });
 
