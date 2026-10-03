@@ -166,25 +166,63 @@ def show_education(request):
             "can_add_education": request.user.is_superuser,
             "can_edit_education": can_edit_education(request.user),
             "institution_query": request.GET.get("institution", "").strip(),
+            "education_form": (
+                EducationForm()
+                if request.user.is_superuser
+                else None
+            ),
         },
     )
 
 def create_education(request):
-    if not request.user.is_superuser:
-        raise PermissionDenied
-    
-    form = EducationForm(request.POST or None)
+    if request.method == "POST":
+        if not request.user.is_authenticated or not request.user.is_superuser:
+            return JsonResponse(
+                {"error": "Kamu tidak memiliki izin menambahkan Education."},
+                status=403,
+            )
 
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Riwayat pendidikan berhasil ditambahkan!")
+        form = EducationForm(request.POST)
+
+        if not form.is_valid():
+            return JsonResponse(
+                {
+                    "error": "Periksa kembali input yang dikirim.",
+                    "errors": form.errors.get_json_data(),
+                },
+                status=400,
+            )
+
+        education = form.save()
+
+        return JsonResponse(
+            {
+                "message": "Riwayat pendidikan berhasil ditambahkan.",
+                "education": {
+                    "id": str(education.id),
+                    "institution": education.institution,
+                    "degree": education.degree,
+                    "description": education.description,
+                    "start_year": education.start_year,
+                    "end_year": education.end_year,
+                    "star_count": 0,
+                    "is_starred": False,
+                },
+            },
+            status=201,
+        )
+
+    if request.method == "GET":
+        if not request.user.is_authenticated or not request.user.is_superuser:
+            raise PermissionDenied
+
         return redirect("main:show_education")
 
-    context = {
-        "name": "Kevin Ryan Ezekiel",
-        "form": form,
-    }
-    return render(request, "education_form.html", context)
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "Metode request tidak didukung."},
+            status=405,
+        )
 
 def update_education(request, education_id):
     if not can_edit_education(request.user):

@@ -1,8 +1,8 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-
-from main.models import Experience, Project
+from django.contrib.auth import get_user_model
+from main.models import Education, Experience, Project
 
 
 class MainTest(TestCase):
@@ -112,3 +112,89 @@ class ProjectTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
+
+class EducationCreationTest(TestCase):
+    def setUp(self):
+        self.superuser = get_user_model().objects.create_superuser(
+            username="education-owner",
+            email="owner@example.com",
+            password="test-password",
+        )
+        self.create_url = reverse("main:create_education")
+        self.valid_payload = {
+            "institution": "Universitas Indonesia",
+            "degree": "S1 Sistem Informasi",
+            "description": "Fokus pada sistem informasi.",
+            "start_year": "2025",
+            "end_year": "",
+        }
+
+    def test_superuser_can_create_education(self):
+        self.client.force_login(self.superuser)
+
+        response = self.client.post(self.create_url, self.valid_payload)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json()["education"]["institution"],
+            "Universitas Indonesia",
+        )
+        self.assertTrue(
+            Education.objects.filter(
+                institution="Universitas Indonesia"
+            ).exists()
+        )
+
+    def test_invalid_education_returns_400(self):
+        self.client.force_login(self.superuser)
+        payload = {
+            **self.valid_payload,
+            "institution": "",
+            "start_year": "not-a-year",
+        }
+
+        response = self.client.post(self.create_url, payload)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("institution", response.json()["errors"])
+        self.assertIn("start_year", response.json()["errors"])
+        self.assertEqual(Education.objects.count(), 0)
+
+    def test_anonymous_user_cannot_create_education(self):
+        response = self.client.post(self.create_url, self.valid_payload)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Education.objects.count(), 0)
+
+    def test_regular_user_cannot_create_education(self):
+        regular_user = get_user_model().objects.create_user(
+            username="regular-user",
+            password="test-password",
+        )
+        self.client.force_login(regular_user)
+
+        response = self.client.post(self.create_url, self.valid_payload)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Education.objects.count(), 0)
+
+    def test_html_tags_are_removed_from_text_fields(self):
+        self.client.force_login(self.superuser)
+        payload = {
+            **self.valid_payload,
+            "institution": "<b>Universitas Indonesia</b>",
+            "degree": "<i>S1 Sistem Informasi</i>",
+            "description": "<script>alert(1)</script>Deskripsi",
+        }
+
+        response = self.client.post(self.create_url, payload)
+
+        self.assertEqual(response.status_code, 201)
+
+        education = Education.objects.get()
+        self.assertEqual(education.institution, "Universitas Indonesia")
+        self.assertEqual(education.degree, "S1 Sistem Informasi")
+        self.assertEqual(education.description, "alert(1)Deskripsi")
+        self.assertNotIn("<", education.institution)
+        self.assertNotIn("<", education.degree)
+        self.assertNotIn("<", education.description)

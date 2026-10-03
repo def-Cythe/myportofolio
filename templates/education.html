@@ -15,11 +15,12 @@
                 <div class="project-header">
                     <h1>Education</h1>
                     {% if can_add_education %}
-                        <a href="{% url 'main:create_education' %}"
-                           class="button project-add-button">
+                        <button type="button"
+                                class="button project-add-button"
+                                popovertarget="education-add-modal">
                             <span aria-hidden="true">+</span>
                             Tambah Education
-                        </a>
+                        </button>
                     {% endif %}
                 </div>
 
@@ -60,6 +61,86 @@
                 <form id="education-csrf-source" hidden>
                     {% csrf_token %}
                 </form>
+
+                {% if can_add_education %}
+                    <div id="education-add-modal"
+                        class="project-delete-modal"
+                        popover="auto"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="education-add-title">
+                        <button type="button"
+                                class="project-delete-modal__backdrop"
+                                popovertarget="education-add-modal"
+                                popovertargetaction="hide"
+                                aria-label="Tutup form tambah Education"></button>
+
+                        <div class="project-delete-modal__content">
+                            <button type="button"
+                                    class="project-delete-modal__close"
+                                    popovertarget="education-add-modal"
+                                    popovertargetaction="hide"
+                                    aria-label="Tutup form tambah Education">×</button>
+
+                            <h2 id="education-add-title">Tambah Education</h2>
+
+                            <form id="education-add-form"
+                                method="post"
+                                action="{% url 'main:create_education' %}">
+                                {% csrf_token %}
+
+                                <div class="form-group">
+                                    <label for="{{ education_form.institution.id_for_label }}">
+                                        {{ education_form.institution.label }}
+                                    </label>
+                                    {{ education_form.institution }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ education_form.degree.id_for_label }}">
+                                        {{ education_form.degree.label }}
+                                    </label>
+                                    {{ education_form.degree }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ education_form.description.id_for_label }}">
+                                        {{ education_form.description.label }}
+                                    </label>
+                                    {{ education_form.description }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ education_form.start_year.id_for_label }}">
+                                        {{ education_form.start_year.label }}
+                                    </label>
+                                    {{ education_form.start_year }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ education_form.end_year.id_for_label }}">
+                                        {{ education_form.end_year.label }}
+                                    </label>
+                                    {{ education_form.end_year }}
+                                </div>
+
+                                <div class="project-delete-modal__actions">
+                                    <button type="button"
+                                            class="button button-secondary"
+                                            popovertarget="education-add-modal"
+                                            popovertargetaction="hide">
+                                        Batal
+                                    </button>
+                                    <button id="education-add-submit"
+                                            type="submit"
+                                            class="button">
+                                        Simpan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </section>
     </main>
@@ -92,6 +173,9 @@
     const csrfToken = document.querySelector(
         "#education-csrf-source [name=csrfmiddlewaretoken]"
     ).value;
+    const addEducationForm = document.getElementById("education-add-form");
+    const addEducationModal = document.getElementById("education-add-modal");
+    const addEducationSubmit = document.getElementById("education-add-submit");
 
     const SEARCH_DEBOUNCE_DELAY = 300;
     let educationSearchTimer;
@@ -365,5 +449,63 @@
         });
 
     loadEducation(searchInput.value.trim());
+
+    if (addEducationForm) {
+        addEducationForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            addEducationSubmit.disabled = true;
+
+            try {
+                const response = await fetch(addEducationForm.action, {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                        "X-CSRFToken": csrfToken,
+                    },
+                    body: new FormData(addEducationForm),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    const validationMessages = Object.entries(
+                        result.errors || {}
+                    ).flatMap(([field, errors]) =>
+                        errors.map((error) => `${field}: ${error.message}`)
+                    );
+
+                    const message = validationMessages.length
+                        ? validationMessages.join(" ")
+                        : result.error || `Request gagal (${response.status})`;
+
+                    throw new Error(message);
+                }
+
+                if (response.status !== 201) {
+                    throw new Error("Server tidak mengonfirmasi data tersimpan.");
+                }
+
+                addEducationForm.reset();
+                addEducationModal.hidePopover();
+
+                await loadEducation(searchInput.value.trim());
+
+                showToast(
+                    "Education ditambahkan",
+                    result.message,
+                    "success"
+                );
+            } catch (error) {
+                console.error("Gagal menambahkan Education:", error);
+                showToast(
+                    "Gagal menambahkan Education",
+                    error.message,
+                    "error"
+                );
+            } finally {
+                addEducationSubmit.disabled = false;
+            }
+        });
+    }
     </script>
 {% endblock content %}

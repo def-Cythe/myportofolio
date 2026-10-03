@@ -26,27 +26,4 @@ class Migration(migrations.Migration):
                 ('ended_at', models.DateTimeField(blank=True, null=True)),
             ],
         ),
-        migrations.CreateModel(
-            name='Education',
-            fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('institution', models.CharField(max_length=255)),
-                ('degree', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True)),
-                ('start_year', models.IntegerField()),
-                ('end_year', models.IntegerField(blank=True, null=True)),
-                ('starred_by', models.ManyToManyField(blank=True, related_name='starred_educations', to=settings.AUTH_USER_MODEL)),
-            ],
-        ),
-        migrations.CreateModel(
-            name='Project',
-            fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField()),
-                ('tech_stack', models.CharField(help_text='Pisahkan dengan koma (contoh: Python, Django)', max_length=255)),
-                ('project_url', models.URLField(blank=True, null=True)),
-                ('starred_by', models.ManyToManyField(blank=True, related_name='starred_projects', to=settings.AUTH_USER_MODEL)),
-            ],
-        ),
     ]

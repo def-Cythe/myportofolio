@@ -1,7 +1,7 @@
 from django.forms import ModelForm, TextInput, Textarea, URLInput, NumberInput
-
 from main.models import Project, Education
-
+from django.core.exceptions import ValidationError
+from django.utils.html import strip_tags
 
 class ProjectForm(ModelForm):
     class Meta:
@@ -98,3 +98,20 @@ class EducationForm(ModelForm):
                 }
             ),
         }
+    def _clean_text_field(self, field_name):
+        value = self.cleaned_data.get(field_name, "")
+        cleaned_value = strip_tags(value).strip()
+
+        if self.fields[field_name].required and not cleaned_value:
+            raise ValidationError("Field ini wajib diisi.")
+
+        return cleaned_value
+
+    def clean_institution(self):
+        return self._clean_text_field("institution")
+
+    def clean_degree(self):
+        return self._clean_text_field("degree")
+
+    def clean_description(self):
+        return self._clean_text_field("description")
