@@ -72,15 +72,43 @@ class ProjectTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "projects.html")
 
-    def test_project_data_appears_when_filled(self):
+    def test_projects_page_renders_ajax_skeleton(self):
         response = self.client.get(reverse("main:show_projects"))
 
-        self.assertContains(response, self.project.title)
-        self.assertContains(response, self.project.description)
-        self.assertContains(response, self.project.tech_stack)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "projects.html")
+        self.assertContains(response, 'id="loading"')
+        self.assertContains(response, 'id="empty"')
+        self.assertContains(response, 'id="error"')
+        self.assertContains(response, 'id="grid"')
+        self.assertNotContains(response, self.project.title)
 
-    def test_empty_project_page(self):
+    def test_projects_json_returns_project_data(self):
+        response = self.client.get(reverse("main:get_projects_json"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["pk"], str(self.project.id))
+        self.assertEqual(
+            data[0]["fields"]["title"],
+            self.project.title,
+        )
+        self.assertEqual(
+            data[0]["fields"]["description"],
+            self.project.description,
+        )
+        self.assertEqual(
+            data[0]["fields"]["tech_stack"],
+            self.project.tech_stack,
+        )
+
+    def test_projects_json_returns_empty_list_when_no_projects(self):
         Project.objects.all().delete()
-        response = self.client.get(reverse("main:show_projects"))
 
-        self.assertContains(response, "No project has been added yet.")
+        response = self.client.get(reverse("main:get_projects_json"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])
