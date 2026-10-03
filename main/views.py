@@ -122,32 +122,52 @@ def delete_project(request, project_id):
     return redirect("main:show_projects")
 
 def get_education_json(request):
+    if request.method != "GET":
+        return JsonResponse(
+            {"error": "Metode request tidak didukung."},
+            status=405,
+        )
+
     institution_query = request.GET.get("institution", "").strip()
-    education = Education.objects.all()
+    education_items = Education.objects.prefetch_related("starred_by")
 
     if institution_query:
-        education = education.filter(institution__icontains=institution_query)
+        education_items = education_items.filter(
+            institution__icontains=institution_query
+        )
 
-    education_json = serializers.serialize("json", education)
-    return HttpResponse(education_json, content_type="application/json")
+    data = []
+
+    for item in education_items:
+        starred_users = list(item.starred_by.all())
+
+        data.append({
+            "id": str(item.id),
+            "institution": item.institution,
+            "degree": item.degree,
+            "description": item.description,
+            "start_year": item.start_year,
+            "end_year": item.end_year,
+            "star_count": len(starred_users),
+            "is_starred": (
+                request.user.is_authenticated
+                and request.user in starred_users
+            ),
+        })
+
+    return JsonResponse(data, safe=False)
 
 def show_education(request):
-    json_response = get_education_json(request)
-
-    education_list = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
+    return render(
+        request,
+        "education.html",
+        {
+            "name": "Kevin Ryan Ezekiel",
+            "can_add_education": request.user.is_superuser,
+            "can_edit_education": can_edit_education(request.user),
+            "institution_query": request.GET.get("institution", "").strip(),
+        },
     )
-    education_list = [item.object for item in education_list]
-    institution_query = request.GET.get("institution", "").strip()
-
-    context = {
-        "name": "Kevin Ryan Ezekiel",
-        "education_list": education_list,
-        "institution_query": institution_query,
-        "is_editor": is_editor(request.user) if request.user.is_authenticated else False,
-    }
-    return render(request, "education.html", context)
 
 def create_education(request):
     if not request.user.is_superuser:
@@ -167,6 +187,9 @@ def create_education(request):
     return render(request, "education_form.html", context)
 
 def update_education(request, education_id):
+    if not can_edit_education(request.user):
+        raise PermissionDenied
+    
     education = get_object_or_404(Education, pk=education_id)
     form = EducationForm(request.POST or None, instance=education)
 
@@ -182,6 +205,9 @@ def update_education(request, education_id):
     return render(request, "education_form.html", context)
 
 def delete_education(request, education_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     education = get_object_or_404(Education, pk=education_id)
 
     if request.method == "POST":
@@ -238,3 +264,37 @@ def toggle_star(request, project_id):
             project.starred_by.add(request.user)
 
     return redirect("main:show_projects")
+
+def can_edit_education(user):
+    return (
+        user.is_authenticated
+        and (user.is_superuser or is_editor(user))
+    )
+
+def toggle_education_star(request, education_id):
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "Metode request tidak didukung."},
+            status=405,
+        )
+
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"error": "Login diperlukan untuk memberi star."},
+            status=403,
+        )
+
+    education = get_object_or_404(Education, pk=education_id)
+    starred_by = education.starred_by
+
+    if starred_by.filter(pk=request.user.pk).exists():
+        starred_by.remove(request.user)
+        is_starred = False
+    else:
+        starred_by.add(request.user)
+        is_starred = True
+
+    return JsonResponse({
+        "star_count": starred_by.count(),
+        "is_starred": is_starred,
+    })
