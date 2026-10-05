@@ -154,3 +154,40 @@ Kelas : PBP C
 ## D. AI Closure : 
 - Tool used: Gemini AI
 - How it was used: diskusi konsep otorisasi berbasis role (`@login_required` sebelum pengecekan role / Principle of Least Privilege), serta debugging beberapa kesalahan kecil
+
+---
+
+# 5/10/2026 - Tugas 5
+## A. Weekly Instruction Step :
+1. Clone this repository
+    git clone https://github.com/ke-Vyn/myportofolio.git
+    cd myportofolio
+2. Create a virtual environment and activate it
+    python -m venv env
+    env\Scripts\activate
+3. Install Dependencies 
+    pip install -r requirements.txt
+4. Apply database migrations
+    python manage.py migrate
+5. Create a superuser (portfolio owner)
+    python manage.py createsuperuser
+6. Run server
+    python manage.py runserver
+7. Open `http://localhost:8000/admin/`, make group called `Editor`, then move editor's account into it
+8. Open `http://localhost:8000` in any browser
+
+## B. Weekly Updates :
+1. Memuat data Education (termasuk status star) via endpoint JSON dan menambahkan pencarian real-time berbasis debouncing
+2. Mengintegrasikan modal tambah Education menggunakan fetch API, menambahkan validasi ModelForm, proteksi CSRF, dan kontrol akses server
+3. Menambahkan indikator loading/empty/error state, notifikasi toast, serta mitigasi XSS via textContent dan strip_tags
+4. Menambahkan pengujian untuk proses pembuatan Education, validasi input, pembatasan akses pengguna, serta pembersihan tag HTML pada input
+
+## C. Reflection : 
+### Assignment 5
+1. Debouncing menunda pengiriman permintaan pencarian sampai pengguna berhenti mengetik selama jeda tertentu. Setiap ketikan baru akan mereset timer, sehingga permintaan tidak dikirim untuk setiap huruf. Teknik ini mengurangi permintaan AJAX yang tidak perlu dan beban server. Selain itu, hal ini juga membuat pencarian lebih efisien.
+
+2. await digunakan untuk menunggu Promise dari fetch() selesai sebelum kode melanjutkan ke langkah berikutnya, seperti memeriksa respons atau membaca isi JSON dengan response.json(). Tanpa await, kode akan langsung berjalan sementara hasilnya belum tersedia. Akibatnya, data bisa digunakan terlalu cepat atau proses berikutnya tidak berjalan sesuai urutan yang diharapkan.
+
+3. XSS adalah serangan dengan menyisipkan skrip harmful yang dijalankan di browser pengguna. Data dari AJAX perlu diamankan secara eksplisit seperti menggunakan textContent karena JavaScript dapat memasukkan data sebagai HTML aktif. Template Django secara default melakukan auto-escaping.
+
+## D. AI Disclosure :
